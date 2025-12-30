@@ -86,63 +86,99 @@
 <div class="napa">¡SI NO TE LLEGA EN MENOS DE 25 MINUTOS TE LLEVAS ÑAPA!</div>
 
 <script>
- // Variables globales
-    let dolarColombiaGlobal = 0;
-    let tasaLupazFinal = 0;
-    const MARGEN = 20.75;
+// CONFIGURACIÓN INICIAL
+// Contraseña: LUPAZ2025
+let datos = { 
+    bcv: 301.00, 
+    copBase: 3751.40, 
+    ganancia: 20.75 
+};
 
-    async function obtenerDatos() {
-        try {
-            // 1. Obtener BCV directo de DolarApi (Venezuela)
-            const resVes = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
-            const dataVes = await resVes.json();
-            const bcvPuro = dataVes.promedio;
+// 1. CARGAR DATOS AL ABRIR LA PÁGINA
+function cargarDatos() {
+    const local = localStorage.getItem('config_lupaz');
+    if (local) { 
+        datos = JSON.parse(local); 
+    }
+    refrescarTodo();
+}
 
-            // 2. Obtener TRM Colombia (Global)
-            const resCop = await fetch('https://open.er-api.com/v6/latest/USD');
-            const dataCop = await resCop.json();
-            dolarColombiaGlobal = dataCop.rates.COP;
-
-            // 3. Calcular Tasa Lupaz: BCV + 20.75%
-            tasaLupazFinal = bcvPuro * (1 + (MARGEN / 100));
-
-            // 4. Mostrar en pantalla
-            document.getElementById('tasaDisplay').innerText = tasaLupazFinal.toFixed(2);
-            llenarTabla();
-            convertir(); // Recalcular si ya había algo escrito
-
-        } catch (error) {
-            console.error("Error cargando APIs:", error);
-            document.getElementById('tasaDisplay').innerText = "Error API";
-        }
+// 2. REFRESCAR TODA LA WEB (Tasa, Tabla y Calculadora)
+function refrescarTodo() {
+    // Calculamos la tasa final con el margen
+    const tasaFinal = datos.bcv * (1 + (datos.ganancia / 100));
+    
+    // Actualizamos el número grande de la tasa
+    if(document.getElementById('tasaDisplay')) {
+        document.getElementById('tasaDisplay').innerText = tasaFinal.toFixed(2);
     }
 
-    function convertir() {
-        let monto = document.getElementById('cop').value;
-        if (monto > 0 && dolarColombiaGlobal > 0) {
-            let res = (monto / dolarColombiaGlobal) * tasaLupazFinal;
-            document.getElementById('ves').value = new Intl.NumberFormat('es-VE').format(res) + " Bs";
-        }
-    }
-
-    function llenarTabla() {
+    // ACTUALIZAMOS LA TABLA DE MONTOS (100k, 200k, etc.)
+    const tablaBody = document.getElementById('tabla-body') || document.getElementById('tabla');
+    if(tablaBody) {
         const montos = [100000, 200000, 300000, 500000, 1000000];
         let html = "";
         montos.forEach(m => {
-            let res = (m / dolarColombiaGlobal) * tasaLupazFinal;
-            html += `<tr><td>${new Intl.NumberFormat('es-CO').format(m)} COP</td><td class="ves-col">${new Intl.NumberFormat('es-VE').format(res)} Bs</td></tr>`;
+            let resultadoVes = (m / datos.copBase) * tasaFinal;
+            html += `<tr>
+                <td>${new Intl.NumberFormat('es-CO').format(m)} COP</td>
+                <td style="text-align:right; font-weight:800; color:#003366;">
+                    ${new Intl.NumberFormat('es-VE').format(resultadoVes)} Bs
+                </td>
+            </tr>`;
         });
-        document.getElementById('tabla').innerHTML = html;
+        tablaBody.innerHTML = html;
     }
+    
+    // Recalcular la calculadora si tiene algún número puesto
+    convertir();
+}
 
-    // Fecha actual
-    const f = new Date();
-    document.getElementById('fecha-texto').innerText = f.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+// 3. LÓGICA DE LA CALCULADORA
+function convertir() {
+    const inputCop = document.getElementById('cop');
+    const inputVes = document.getElementById('ves');
+    
+    if (inputCop && inputVes && inputCop.value > 0) {
+        const tasaFinal = datos.bcv * (1 + (datos.ganancia / 100));
+        const resultadoVes = (inputCop.value / datos.copBase) * tasaFinal;
+        inputVes.value = new Intl.NumberFormat('es-VE').format(resultadoVes) + " Bs";
+    }
+}
 
-    // Iniciar carga
-    obtenerDatos();
+// 4. FUNCIONES DEL PANEL ADMINISTRADOR
+function abrirAdmin() {
+    const pass = prompt("Contraseña de Administrador:");
+    if (pass === "LUPAZ2025") {
+        document.getElementById('panel-config').style.display = 'block';
+        document.getElementById('input-bcv').value = datos.bcv;
+        document.getElementById('input-cop-base').value = datos.copBase;
+        document.getElementById('input-ganancia').value = datos.ganancia;
+    } else if (pass !== null) {
+        alert("Contraseña incorrecta");
+    }
+}
+
+function guardarCambios() {
+    datos.bcv = parseFloat(document.getElementById('input-bcv').value);
+    datos.copBase = parseFloat(document.getElementById('input-cop-base').value);
+    datos.ganancia = parseFloat(document.getElementById('input-ganancia').value);
+    
+    localStorage.setItem('config_lupaz', JSON.stringify(datos));
+    refrescarTodo();
+    alert("¡Tasa y Tabla actualizadas para este dispositivo!");
+    cerrarAdmin();
+}
+
+function cerrarAdmin() {
+    document.getElementById('panel-config').style.display = 'none';
+}
+
+// INICIAR AUTOMÁTICAMENTE
+cargarDatos();
 </script>
 
 </body>
 
 </html>
+
