@@ -186,8 +186,29 @@ function cerrarAdmin() {
 cargarDatos();
 </script>
 
+    <div id="admin-dock">
+    <div id="panel-config">
+        <div class="admin-title">
+            <span>CONFIGURACIÓN</span>
+            <button onclick="cerrarAdmin()" style="border:none; background:none; color:red; cursor:pointer;">X</button>
+        </div>
+        <label style="font-size: 0.7rem; display: block;">PRECIO DÓLAR (BCV):</label>
+        <input type="number" id="input-bcv" class="input-admin" step="0.01">
+        
+        <label style="font-size: 0.7rem; display: block;">TRM COLOMBIA (COP):</label>
+        <input type="number" id="input-cop-base" class="input-admin">
+        
+        <label style="font-size: 0.7rem; display: block;">% GANANCIA LUPAZ:</label>
+        <input type="number" id="input-ganancia" class="input-admin" step="0.01">
+        
+        <button class="btn-save" onclick="guardarCambios()">ACTUALIZAR WEB</button>
+    </div>
+    <button class="btn-lock" onclick="abrirAdmin()"><i class="fas fa-lock"></i></button>
+</div>
+    
 </body>
 
 </html>
+
 
 
