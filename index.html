@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CASA DE CAMBIO LUPAZ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root { --azul: #003366; --naranja: #FFA500; --blanco: #ffffff; --gris: #f4f7f6; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--gris); margin: 0; }
+        header { background: var(--blanco); padding: 20px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .logo-img { width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 3px solid var(--naranja); margin-bottom: 10px; }
+        header h1 { font-size: 1.2rem; color: var(--azul); margin: 0; text-align: center; line-height: 1; }
+        header h1 span { color: var(--naranja); font-size: 1.8rem; font-weight: 800; }
+        .hero { background: var(--azul); color: white; padding: 30px 20px; text-align: center; border-bottom: 5px solid var(--naranja); }
+        .tasa-caja { background: rgba(255,255,255,0.1); border: 2px solid var(--naranja); display: inline-block; padding: 10px 25px; border-radius: 15px; margin-top: 10px; }
+        .tasa-valor { font-size: 2.2rem; color: var(--naranja); font-weight: 800; }
+        .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 5px; }
+        .campo { width: 100%; padding: 12px; font-size: 1.2rem; border: 2px solid #ddd; border-radius: 10px; box-sizing: border-box; font-weight: bold; }
+        .resultado { background: #fff9e6; border: 2px solid var(--naranja); color: var(--azul); text-align: center; }
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 12px 0; border-bottom: 1px solid #f9f9f9; font-weight: 600; }
+        .ves-col { text-align: right; color: var(--azul); font-weight: 800; }
+        .napa { background: var(--naranja); color: var(--azul); text-align: center; padding: 20px; font-weight: 800; margin-top: 20px; }
+        .btn-wa { display: block; background: #25D366; color: white; text-align: center; padding: 15px; text-decoration: none; border-radius: 10px; font-weight: bold; margin-top: 10px; }
+        @media (max-width: 700px) { .container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="logo1.jpg" alt="Logo LUPAZ" class="logo-img">
+    <h1>CASA DE CAMBIO<br><span>LUPAZ</span></h1>
+</header>
+<div id="fecha-actual" style="text-align: center; font-size: 0.9rem; color: var(--azul); margin-top: 10px; font-weight: 600;">
+    <i class="far fa-calendar-alt"></i> <span id="fecha-texto"></span>
+</div>
+
+<script>
+    function mostrarFecha() {
+        const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const fecha = new Date().toLocaleDateString('es-ES', opciones);
+        // Hacer que la primera letra sea mayúscula
+        const fechaCapitalizada = fecha.charAt(0).toUpperCase() + fecha.slice(1);
+        document.getElementById('fecha-texto').innerText = fechaCapitalizada;
+    }
+    mostrarFecha();
+</script>
+<section class="hero">
+    <p>Tasa LUPAZ:</p>
+    <div class="tasa-caja">
+        <span class="tasa-valor" id="tasaDisplay">...</span> BS
+    </div>
+    <p style="font-size: 0.7rem; opacity: 0.7; margin-top: 5px;"></p>
+</section>
+
+<div class="container">
+    <div class="card">
+        <h2>Calculadora de Envío</h2>
+        <div class="input-group">
+            <label>Envías (Pesos COP)</label>
+            <input type="number" id="cop" class="campo" placeholder="Ej: 300000" oninput="convertir()">
+        </div>
+        <div class="input-group">
+            <label>Reciben en Venezuela (Bs)</label>
+            <input type="text" id="ves" class="campo resultado" readonly placeholder="Calculando...">
+        </div>
+        <a href="https://wa.me/573216460472" class="btn-wa"><i class="fab fa-whatsapp"></i> ENVIAR AHORA</a>
+    </div>
+
+    <div class="card">
+        <h2>Lista de Precios Hoy</h2>
+        <table>
+            <tbody id="tabla">
+                <tr><td>Sincronizando con el mercado...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="napa">¡SI NO TE LLEGA EN MENOS DE 25 MINUTOS TE LLEVAS ÑAPA!</div>
+
+<script>
+    let dolarColombiaGlobal = 0;
+    let tasaLupazFinal = 0;
+
+    // --- CONFIGURACIÓN DE TU GANANCIA ---
+    const PORCENTAJE_GANANCIA = 20.75; 
+    // ------------------------------------
+
+    async function obtenerTasas() {
+        try {
+            const response = await fetch('https://open.er-api.com/v6/latest/USD');
+            const data = await response.json();
+
+            dolarColombiaGlobal = data.rates.COP;
+            let tasaBaseVES = data.rates.VES; 
+
+            // APLICAMOS TU GANANCIA: Tasa Base + 20.75%
+            tasaLupazFinal = tasaBaseVES * (1 + (PORCENTAJE_GANANCIA / 100));
+
+            // Actualizamos la interfaz
+            document.getElementById('tasaDisplay').innerText = tasaLupazFinal.toFixed(2);
+            
+            llenarTablaReferencia();
+            
+        } catch (error) {
+            console.error("Error API:", error);
+            document.getElementById('tasaDisplay').innerText = "Error";
+        }
+    }
+
+    function convertir() {
+        let montoCOP = document.getElementById('cop').value;
+        let campoVES = document.getElementById('ves');
+
+        if (montoCOP > 0 && dolarColombiaGlobal > 0) {
+            // Triangulación: (COP / TRM COLOMBIA) * TASA LUPAZ CON GANANCIA
+            let dolares = montoCOP / dolarColombiaGlobal;
+            let bolivares = dolares * tasaLupazFinal;
+            
+            campoVES.value = new Intl.NumberFormat('es-VE').format(bolivares) + " Bs";
+        } else {
+            campoVES.value = "";
+        }
+    }
+
+    function llenarTablaReferencia() {
+        const montos = [100000, 200000, 300000, 500000, 1000000];
+        let html = "";
+        
+        montos.forEach(m => {
+            let res = (m / dolarColombiaGlobal) * tasaLupazFinal;
+            html += `<tr>
+                        <td>${new Intl.NumberFormat('es-CO').format(m)} COP</td>
+                        <td class="ves-col">${new Intl.NumberFormat('es-VE').format(res)} Bs</td>
+                    </tr>`;
+        });
+        document.getElementById('tabla').innerHTML = html;
+    }
+
+    obtenerTasas();
+</script>
+
+</body>
+</html>
